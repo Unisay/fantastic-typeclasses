@@ -3,7 +3,6 @@ package com.github.unisay.ft
 import cats.{Alternative, Applicative, Apply, Eval, MonoidK}
 import org.specs2._
 import cats.implicits._
-import cats.syntax.eq._
 import cats.kernel.Monoid
 
 class MonoidKSpec extends Specification { def is = s2"""
