@@ -10,13 +10,13 @@ import com.github.unisay.ft.Alt._
 
 
 trait Alt[A[_]] extends Alternative[A] {
-  def alt[F](l: A[F], r: => A[F]): A[F]
+  def alt[F](l: => A[F], r: => A[F]): A[F]
 }
 
 object Alt {
   def apply [A[_]: Alt]: Alt[A] = implicitly[Alt[A]]
-  def alt   [A[_]: Alt, B](l: A[B], r: => A[B]): A[B] = Alt[A].alt(l, r)
-  def some  [A[_]: Alt, B](a: A[B]): A[Stream[B]] = Alt[A].map2Eval(a, always(many(a)))(_ #:: _).value
+  def alt   [A[_]: Alt, B](l: => A[B], r: => A[B]): A[B] = Alt[A].alt(l, r)
+  def some  [A[_]: Alt, B](a: A[B]): A[Stream[B]] = Alt[A].map2(a, many(a))(_ #:: _)
   def many  [A[_]: Alt, B](a: A[B]): A[Stream[B]] = alt(some(a), Stream.empty[B].pure[A])
 }
 
@@ -63,8 +63,6 @@ class AlternativeSpec extends Specification { def is = s2"""
   parse binary zero (negative)   $binZeroNegative
   parse binary digit             $parseBinDigit
   parse binary digits            $parseBinDigits
-  test1                          $stackOverflow
-  test2                          $noStackOverflow
   """
 /*  implicit val listOfOptions: Alternative[λ[α => List[Option[α]]]] = Alternative[List].compose[Option]
   implicit val optionOfLists: Alternative[λ[α => Option[List[α]]]] = Alternative[Option].compose[List]*/
@@ -81,7 +79,7 @@ class AlternativeSpec extends Specification { def is = s2"""
     parser(s, 0).map(_._2).value.value
 
   implicit val alternativeParser: Alt[Parser] = new Alt[Parser] {
-    def alt[F](l: Parser[F], r: => Parser[F]): Parser[F] =
+    def alt[F](l: => Parser[F], r: => Parser[F]): Parser[F] =
       (s: String, o: Offset) => l(s, o).recoverWith { case (_: Error) => r(s, o) }
     def combineK[A](x: Parser[A], y: Parser[A]): Parser[A] =
       alt(x, y)
@@ -98,31 +96,23 @@ class AlternativeSpec extends Specification { def is = s2"""
 
     override def map[A, B](fa: Parser[A])(f: A => B): Parser[B] =
       (s: String, o: Offset) => fa(s, o).map { case (o1, a) => (o1, f(a)) }
-
-    override def map2Eval[A, B, Z](fa: Parser[A], efb: Eval[Parser[B]])(f: (A, B) => Z): Eval[Parser[Z]] =
-      efb.map { fb =>
-        (s: String, o: Offset) => {
-          for {
-            ra <- fa(s, o)
-            (oa, a) = ra
-            rb <- fb(s, o)
-            (ob, b) = rb
-          } yield (oa + ob, f(a, b))
-        }
-      }
   }
 
   def digit(i: Digit): Parser[Digit] = {
     assert (i <= 9 && i >= 0, "Digit 0-9 is expected")
     (s: String, o: Offset) => {
-      println(s.substring(0, o) + "|" + s.substring(o))
-      EitherT {
-        Eval.now {
-          s.headOption
-           .map(_.asDigit)
-           .filter(_ === i)
-           .map((d: Digit) => (o + 1, d))
-           .toRight("Unexpected digit occurred")
+      if (s.length <= o)
+        EitherT.left(Eval.now(s"no input at offset $o"))
+      else {
+        EitherT {
+          Eval.now {
+            s.drop(o)
+              .headOption
+              .map(_.asDigit)
+              .filter(_ === i)
+              .map((d: Digit) => (o + 1, d))
+              .toRight("Unexpected digit occurred")
+          }
         }
       }
     }
@@ -141,18 +131,6 @@ class AlternativeSpec extends Specification { def is = s2"""
   }
 
   def parseBinDigits =
-    parse(binDigits, "010").map(_.toList) must beRight(List(0, 1, 0))
-
-  def noStackOverflow = {
-    def one: Stream[Int] = 1 #:: zer // 1 #:: 0 #:: 1 #:: ⊥
-    def zer: Stream[Int] = 0 #:: one // 0 #:: 1 #:: 0 #:: ⊥
-    one.take(3).toList must_=== List(1, 0, 1)
-  }
-
-  def stackOverflow = {
-    def one: Eval[Stream[Int]] = zer.map(0 #:: _)
-    def zer: Eval[Stream[Int]] = one.map(1 #:: _)
-    one.map(_.take(3).toList).value must_=== List(1, 0, 1)
-  }
+    parse(binDigits, "010110").map(_.toList) must beRight(List(0, 1, 0, 1, 1, 0))
 
 }
