@@ -1,12 +1,9 @@
 package com.github.unisay.ft
 
-import cats.Eval.{always, now}
-import cats.data.EitherT
-import cats.{Alternative, Eval, MonoidK}
-import org.specs2._
+import cats.Alternative
 import cats.implicits._
-import cats.kernel.Monoid
 import com.github.unisay.ft.Alt._
+import org.specs2._
 
 
 trait Alt[A[_]] extends Alternative[A] {
@@ -20,63 +17,25 @@ object Alt {
   def many  [A[_]: Alt, B](a: A[B]): A[Stream[B]] = alt(some(a), Stream.empty[B].pure[A])
 }
 
-class MonoidKSpec extends Specification { def is = s2"""
- Monoid[List[?]].empty    $emptyListMonoid
- MonoidK[List].empty      $emptyListMonoidK
- Monoid[List[?]].combine  $combineListMonoid
- MonoidK[List].combine    $combineListMonoidK
- """
-
-  object Foo
-
-  // Monoid[A] means there is an “empty” A value that functions as an identity
-  def emptyListMonoid = {
-    val res: List[Foo.type] = Monoid[List[Foo.type]].empty
-    res must_=== Nil
-  }
-
-  // A MonoidK[F] can produce a Monoid[F[A]] for any type A
-  // The empty value just depend on the structure of F, but not on the structure of A.
-  def emptyListMonoidK = {
-    val res1: List[Foo.type] = MonoidK[List].empty[Foo.type]
-    val res2: List[Foo.type] = MonoidK[List].empty // type parameter can be inferred
-    (res1 must_=== Nil) and (res2 must_=== Nil)
-  }
-
-  // Monoid[A] allows A values to be combined
-  def combineListMonoid = {
-    val res: List[String] = Monoid[List[String]].combine(List("hello", "world"), List("goodbye", "moon"))
-    res must_=== List("hello", "world", "goodbye", "moon")
-  }
-
-  // MonoidK[F] allows two F[A] values to be combined, for any A.
-  // The combination operation just depend on the structure of F, but not on the structure of A.
-  def combineListMonoidK = {
-    val res: List[String] = MonoidK[List].combineK[String](List("hello", "world"), List("goodbye", "moon"))
-    res must_=== List("hello", "world", "goodbye", "moon")
-  }
-}
-
 // https://wiki.haskell.org/Typeclassopedia#Failure_and_choice:_Alternative.2C_MonadPlus.2C_ArrowPlus
 class AlternativeSpec extends Specification { def is = s2"""
   parse binary zero (positive)   $binZeroPositive
   parse binary zero (negative)   $binZeroNegative
   parse binary digit             $parseBinDigit
-  parse binary digits            $parseBinDigits
+  parse some binary digits       $parseSomeBinDigits
+  parse many binary digits       $parseManyBinDigits
   """
-/*  implicit val listOfOptions: Alternative[λ[α => List[Option[α]]]] = Alternative[List].compose[Option]
-  implicit val optionOfLists: Alternative[λ[α => Option[List[α]]]] = Alternative[Option].compose[List]*/
+
+  /*
+  implicit val listOfOptions: Alternative[λ[α => List[Option[α]]]] = Alternative[List].compose[Option]
+  implicit val optionOfLists: Alternative[λ[α => Option[List[α]]]] = Alternative[Option].compose[List]
+  */
 
   type Digit = Int
   type Offset = Int
   type Error = String
 
-  trait Parser[A] {
-    def apply(s: String, o: Offset): EitherT[Eval, Error, (Int, A)]
-  }
-
-  def parse[A](parser: Parser[A], s: String): Either[Error, A] =
-    parser(s, 0).map(_._2).value.value
+  type Parser[A] = (String, Offset) => Either[Error, (Offset, A)]
 
   implicit val alternativeParser: Alt[Parser] = new Alt[Parser] {
     def alt[F](l: => Parser[F], r: => Parser[F]): Parser[F] =
@@ -84,9 +43,9 @@ class AlternativeSpec extends Specification { def is = s2"""
     def combineK[A](x: Parser[A], y: Parser[A]): Parser[A] =
       alt(x, y)
     def empty[A]: Parser[A] =
-      (_, _) => EitherT.left(now("Error"))
+      (_, _) => Either.left("Error")
     def pure[A](a: A): Parser[A] =
-      (_, o) => EitherT.right(always((o, a)))
+      (_, o) => Either.right((o, a))
     def ap[A, B](ff: Parser[A => B])(fa: Parser[A]): Parser[B] =
       (s, o) => ff(s, o).flatMap {
         case (o1, f) => fa(s, o1).map {
@@ -102,35 +61,40 @@ class AlternativeSpec extends Specification { def is = s2"""
     assert (i <= 9 && i >= 0, "Digit 0-9 is expected")
     (s: String, o: Offset) => {
       if (s.length <= o)
-        EitherT.left(Eval.now(s"no input at offset $o"))
+        Either.left(s"No input at offset $o")
       else {
-        EitherT {
-          Eval.now {
-            s.drop(o)
-              .headOption
-              .map(_.asDigit)
-              .filter(_ === i)
-              .map((d: Digit) => (o + 1, d))
-              .toRight("Unexpected digit occurred")
-          }
-        }
+        s.drop(o)
+          .headOption
+          .map(_.asDigit)
+          .filter(_ === i)
+          .map((d: Digit) => (o + 1, d))
+          .toRight("Expected: digit")
       }
     }
   }
 
-//  val binDigit: Parser[Digit] = digit(0) |@| digit(1) map (_ orElse _)
   def binDigit: Parser[Digit] = alt(digit(0), digit(1))
-  def binDigits: Parser[Stream[Digit]] = Alt.some(binDigit)
+  def someBinDigits: Parser[Stream[Digit]] = Alt.some(binDigit)
+  def manyBinDigits: Parser[Stream[Digit]] = many(binDigit)
 
-  def binZeroPositive = parse(digit(0), "0") must beRight(0)
-  def binZeroNegative = parse(digit(0), "1") must beLeft
+  // tests
 
-  def parseBinDigit = {
-    parse(binDigit, "0").must(beRight(0)) and
-    parse(binDigit, "1").must(beRight(1))
-  }
+  def binZeroPositive =
+    digit(0).apply("0", 0) must beRight((1, 0))
 
-  def parseBinDigits =
-    parse(binDigits, "010110").map(_.toList) must beRight(List(0, 1, 0, 1, 1, 0))
+  def binZeroNegative =
+    digit(0).apply("1", 0) must beLeft("Expected: digit")
+
+  def parseBinDigit =
+    binDigit("0", 0).must(beRight((1, 0))) and
+    binDigit("1", 0).must(beRight((1, 1)))
+
+  def parseSomeBinDigits =
+    someBinDigits("010110", 1).must(beRight((6, Stream(1, 0, 1, 1, 0)))) and
+    someBinDigits("no digits", 0).must(beLeft("Expected: digit"))
+
+  def parseManyBinDigits =
+    manyBinDigits("no digits", 0).must(beRight((0, Stream()))) and
+    manyBinDigits("10end", 0).must(beRight((2, Stream(1, 0))))
 
 }
