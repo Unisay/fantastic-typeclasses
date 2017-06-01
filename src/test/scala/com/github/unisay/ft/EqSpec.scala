@@ -1,6 +1,6 @@
 package com.github.unisay.ft
 
-import cats.{Foldable, Monoid}
+import cats.Monoid
 import cats.implicits._
 import cats.kernel.Eq
 import com.github.unisay.ft.EqFixture._
@@ -28,7 +28,7 @@ class EqSpec extends Specification { def is = s2"""
   def combinedEquality: Eq[Thing] = {
     // Note: Eq.allEquals is an identity element under the 'and' composition
     implicit val equalityMonoid: Monoid[Eq[Thing]] = Eq.allEqualBoundedSemilattice
-    Foldable[List].combineAll(List(equalityByCode, equalityByName, equalityByQuality))
+    List(equalityByCode, equalityByName, equalityByQuality).combineAll(equalityMonoid)
   }
 
   def testEqStrings = {
