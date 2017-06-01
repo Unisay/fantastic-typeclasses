@@ -1,12 +1,41 @@
-Semilattice
+cats.kernel.Semilattice
 ===
 
-A CRDT (short for Conflict-free replicated datatype) is a data structure 
-that supports an operation join :: a -> a -> a where join is associative, 
-commutative and idempotent. 
+Semilattices are useful in concurrent and distributed systems:
+* CRDTs
+* LVars
+* Propagators
 
-These three attributes together are usually referred to as a semilattice
-in literature. 
+**Laws:**
+* Associativity: `(x \/ that) \/ z === x \/ (that \/ z)`
+* Commutativity: `x \/ that === that \/ x`
+* Idempotentence: `x \/ x === x`
 
-CRDTs have monotonically increasing state, where clients never observe 
-state rollback. The set of states is partially ordered.
+Associativity lets chunk and do in parallel:
+ 
+`(a \/ b) \/ (c \/ d) \/ (e \/ f)`
+
+Idempotence lets us use at-least-once messaging:
+
+`a \/ a \/ a \/ a === a`
+
+Commutativity means not caring about the ordering of events:
+
+`a \/ b \/ c === c \/ a \/ b`
+
+
+
+**Example: Max (Min)**
+* Associative: `(x max that) max z === x max (that max z)`
+* Commutative: `x max that === that max x`
+* Idempotent: `x max x === x`
+
+
+**CRDTs:**
+* Convergent Replicated Data Types (associative, commutative, idempotent). 
+* Commutative Replicated Data Types (associative, commutative) - requires at-most once delivery.
+
+
+**Notes:**
+* We can't use `Semilattice` with `Foldable` (only with `Reducible` aka `Foldable1`) 
+  because it doesn't have an `empty`.
