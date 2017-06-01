@@ -3,22 +3,24 @@ cats.Alternative
 
 A monoid on applicative functors.
 
-Both Option and List can represent computations with a varying number of results. 
-We use `Option` to indicate a computation can fail somehow (that is, it can have 
-either zero results or one result), and we use `List` for computations that can 
-have many possible results (ranging from zero to arbitrarily many results). 
+**Possible intuition: "Recovery"** 
 
-In both of these cases, one useful operation is amalgamating all possible results 
-from multiple computations into a single computation.
- 
- With lists, for instance, that would amount to concatenating lists of possible results. 
- The Alternative class captures this amalgamation in a general way.
+1. Single result of a type is needed
+2. Multiple (alternative) computations providing result exist, 
+   such that subsequent computations are evaluated 
+   if preceding has failed.
 
-```scala
-import cats.Applicative
-import cats.MonoidK
+**Examples:**
+* Example: `Option.orElse`
+* Example: parser combinators
+* Example: HTTP parameters taken from body, query, header, config.
+* Example: fetching?
 
-trait Alternative[F[_]] extends Applicative[F] with MonoidK[F] {
-  def compose[G[_]: Applicative]: Alternative[λ[α => F[G[α]]]]
-}
+**Laws**
+ * TBD
+
+**Notes:**
+
+* Lazyness is crucial
+* No syntax in cats
 ```
