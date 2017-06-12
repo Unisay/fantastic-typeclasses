@@ -18,5 +18,10 @@ invert a <> a == mempty
 ```
   
 **Notes:**
-  * Hard to find examples besides algebraic (History?, CRDT?)
+  * Example: Real numbers R with addition
+  * Example: Nonzero real numbers R \ {0} with multiplication.
+  * Example: The group of permutations of 52 objects can be identified
+             with shuffling a deck of cards. Every time someone shuffles 
+             a pack they are performing a group operation.
+  * Groups are used in physics, molecular biology, encryption.
   * CommutativeGroup (Abelian) 
