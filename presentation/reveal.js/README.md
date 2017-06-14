@@ -324,7 +324,11 @@ Reveal.initialize({
 	maxScale: 1.5
 
 
+
+
 });
+
+
 
 ```
 
@@ -341,6 +345,8 @@ Reveal.initialize({
 	minScale: 1,
 	maxScale: 1
 });
+
+
 
 ```
 
@@ -871,6 +877,8 @@ Reveal.initialize({
 	postMessageEvents: false
 });
 
+
+
 ```
 
 
@@ -998,6 +1006,8 @@ Reveal.initialize({
 		{ src: 'plugin/notes-server/client.js', async: true }
 	]
 });
+
+
 
 ```
 
