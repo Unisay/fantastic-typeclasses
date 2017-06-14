@@ -10,15 +10,15 @@ object EqFixture {
 
   trait Thing {
     def name: Name
-    def code: String
+    def code: Int
     def quality: Quality
   }
 
-  case class MadeInGermany(code: String, name: Name) extends Thing {
+  case class MadeInGermany(code: Int, name: Name) extends Thing {
     def quality: Quality = Good
   }
 
-  case class MadeInChina(code: String, name: Name) extends Thing {
+  case class MadeInChina(code: Int, name: Name) extends Thing {
     def quality: Quality = Bad
   }
 

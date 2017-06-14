@@ -14,14 +14,14 @@ class EqSpec extends Specification { def is = s2"""
   clusterCounterTest eqv for some things (combined)    $testCombinedEquality
   """
 
-  implicit val stringEquality: Eq[String] = Eq.fromUniversalEquals
+//  implicit val stringEquality: Eq[String] = Eq.fromUniversalEquals
 
   implicit val caseInsensitiveNameEquality: Eq[Name] = Eq.by(_.value.toLowerCase)
 
   implicit val qualitativeEquality: Eq[Quality] = Eq.fromUniversalEquals
 
   val equalityByName: Eq[Thing]    = Eq[Name].on(_.name) // contramap
-  val equalityByCode: Eq[Thing]    = Eq[String].on(_.code)
+  val equalityByCode: Eq[Thing]    = Eq[Int].on(_.code)
   val equalityByQuality: Eq[Thing] = Eq[Quality].on(_.quality)
   val compositeEquality: Eq[Thing] = equalityByCode or (equalityByName and equalityByQuality) // <|>
 
@@ -42,17 +42,17 @@ class EqSpec extends Specification { def is = s2"""
   }
 
   def testNominalEquality = {
-    (equalityByName.eqv(MadeInGermany(code = "1", Name("f")), MadeInGermany(code = "2", Name("F"))) must_=== true) and
-    (equalityByName.eqv(MadeInGermany(code = "1", Name("f")), MadeInChina(code = "1", Name("f"))) must_=== true)
+    (equalityByName.eqv(MadeInGermany(code = 1, Name("f")), MadeInGermany(code = 2, Name("F"))) must_=== true) and
+    (equalityByName.eqv(MadeInGermany(code = 1, Name("f")), MadeInChina(code = 1, Name("f"))) must_=== true)
   }
 
   def testCompositeEquality = {
-    (compositeEquality.eqv(MadeInGermany(code = "1", Name("f")), MadeInGermany(code = "1", Name("Z"))) must_=== true) and
-    (compositeEquality.eqv(MadeInGermany(code = "1", Name("f")), MadeInGermany(code = "2", Name("F"))) must_=== true) and
-    (compositeEquality.eqv(MadeInGermany(code = "1", Name("f")), MadeInChina(code = "2", Name("f"))) must_=== false)
+    (compositeEquality.eqv(MadeInGermany(code = 1, Name("f")), MadeInGermany(code = 1, Name("Z"))) must_=== true) and
+    (compositeEquality.eqv(MadeInGermany(code = 1, Name("f")), MadeInGermany(code = 2, Name("F"))) must_=== true) and
+    (compositeEquality.eqv(MadeInGermany(code = 1, Name("f")), MadeInChina(code = 2, Name("f"))) must_=== false)
   }
 
   def testCombinedEquality =
-    combinedEquality.eqv(MadeInGermany(code = "1", Name("f")), MadeInGermany(code = "1", Name("F"))) must_=== true
+    combinedEquality.eqv(MadeInGermany(code = 1, Name("f")), MadeInGermany(code = 1, Name("F"))) must_=== true
 
 }

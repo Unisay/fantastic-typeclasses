@@ -39,13 +39,10 @@ Transitivity, asymmetry but no totality.
 
 * Ordering users by the median price of the articles they've bought.
 * Ordering articles by their price (assuming that each article has a price defined).
-* "is an ancestor of" on the set of all humans that have ever lived. 
-  My grandfather is an ancestor of my father, and my father is an ancestor of me, 
-  so my grandfather is an ancestor of me (by transitivity). 
-  Also, because my father is an ancestor of me, 
-  I'm not an ancestor of my father (by asymmetry). 
-  There might be people who are not ancestors of each other at all - 
-  such as my father and my mother.
+* A collection of people ordered by genealogical descendancy.
+  Some pairs of people bear the descendant-ancestor relationship, 
+  but other pairs of people are incomparable, with neither being a
+  descendent of the other.
 
 **Intuition:**
 Ordering something by the property that might not be defined. 
