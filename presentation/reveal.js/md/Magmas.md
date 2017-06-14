@@ -71,3 +71,28 @@ Monoid | ✔ | | | ✔ |
 CommutativeMonoid | ✔ | | ✔ | ✔ |
 Group | ✔ | | | ✔ | ✔
 CommutativeGroup | ✔ | | ✔ | ✔ | ✔
+
+^
+### Example
+
+**CRDTs**
+
+> In distributed computing, a conflict-free replicated data type (CRDT) is a data structure which can be replicated across multiple computers in a network, where the replicas can be updated independently and concurrently without coordination between the replicas, and where it is always mathematically possible to resolve inconsistencies which might result.
+  
+^
+**Commutative Replicated Data Types (CmRDT)**    
+aka "Operation-based"
+
+Replicas propagate state by transmitting only the update operation that has to be commutative.
+
+^
+**Convergent Replicated Data Types (CvRDT)**    
+aka "State-based"
+
+Replicas send their full local state to other replicas, where the states are merged. 
+ 
+^
+Type | Associativity | Commutativity | Idempotency | Delivery
+--------- | ------------- | ------------- | ----------- | --------
+CmRDT | ✔ | ✔ |   | at-most-once |
+CvRDT | ✔ | ✔ | ✔ | at-least-once |
