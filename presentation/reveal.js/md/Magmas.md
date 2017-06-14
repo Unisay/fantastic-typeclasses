@@ -16,14 +16,20 @@ correspond to the values that inhabit it.
 
 `(x |+| y) |+| z === x |+| (y |+| z)`
 
-Note: parallel fold
+Note: Order of evaluation
 
 ^
 ### Idempotence   
 
 `x |+| x === x`
 
-Note: at-least-once delivery
+Note: 
+This is a very useful property in many situations, 
+as it means that an operation can be repeated or retried
+as often as necessary without causing unintended effects. 
+With non-idempotent operations, the algorithm may have to 
+keep track of whether the operation was already performed or not.
+Example: at-least-once delivery
  
 ^
 ### Commutativity  
@@ -32,6 +38,7 @@ Note: at-least-once delivery
 
 Note: parallel execution
 
+Putting on socks resembles a commutative operation since which sock is put on first is unimportant. Either way, the result (having both socks on), is the same. 
 ^
 ### Identity 
 
