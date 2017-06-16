@@ -7,11 +7,11 @@ import com.github.unisay.ft.EqFixture._
 import org.specs2._
 
 class EqSpec extends Specification { def is = s2"""
-  clusterCounterTest eqv for strings                   $testEqStrings
-  clusterCounterTest eqv for names                     $testEqNames
-  clusterCounterTest eqv for some things (nominal)     $testNominalEquality
-  clusterCounterTest eqv for some things (composite)   $testCompositeEquality
-  clusterCounterTest eqv for some things (combined)    $testCombinedEquality
+  test eqv for strings                   $testEqStrings
+  test eqv for names                     $testEqNames
+  test eqv for some things (nominal)     $testNominalEquality
+  test eqv for some things (composite)   $testCompositeEquality
+  test eqv for some things (combined)    $testCombinedEquality
   """
 
 //  implicit val stringEquality: Eq[String] = Eq.fromUniversalEquals
