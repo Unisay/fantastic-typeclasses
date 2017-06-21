@@ -1,6 +1,6 @@
 package com.github.unisay.ft
 
-import cats.kernel.BoundedSemilattice
+import cats.kernel.{BoundedSemilattice, CommutativeMonoid, Monoid}
 import org.specs2._
 
 import scala.collection.immutable.IntMap
@@ -10,6 +10,7 @@ import scala.math.max
 class CrdtSpec extends Specification { def is = s2"""
   testCvRDT                          $testCvRDT
   testCmRDT                          $testCmRDT
+  testCmRDT with multiplication      $testCmRDT2
   """
 
   def testCvRDT = {
@@ -114,4 +115,57 @@ class CrdtSpec extends Specification { def is = s2"""
     node1.counter must_=== 1
   }
 
+  def testCmRDT2 = {
+
+    case class Operation(inc: Int, dec: Int, mul: Int) {
+      def apply(value: Int): Int = (value + inc - dec) * mul
+    }
+
+    def inc(value: Int): Operation = Operation(inc = value, dec = 0, mul = 1)
+    def dec(value: Int): Operation = Operation(inc = 0, dec = value, mul = 1)
+    def mul(value: Int): Operation = Operation(inc = 0, dec = 0, mul = value)
+
+    implicit val operationCM: CommutativeMonoid[Operation] =
+      new CommutativeMonoid[Operation] {
+        def empty: Operation =
+          Operation(inc = 0, dec = 0, mul = 1)
+        def combine(x: Operation, y: Operation): Operation =
+          Operation(inc = x.inc + y.inc, dec = x.dec + y.dec, mul = x.mul * y.mul)
+      }
+
+
+    class Node(val id: Int) {
+      private val operations = ListBuffer[Operation]()
+      def counter: Int = {
+        val operation = Monoid[Operation].combineAll(operations)
+        operation.apply(0)
+      }
+      private val _nodes: ListBuffer[Node] = ListBuffer.empty
+      def broadcastTo(nodes: Node*): Unit = _nodes ++= nodes
+      def apply(operation: Operation): Unit = {
+        local(operation)
+        downstream(operation)
+      }
+      def local(operation: Operation): Unit = {
+        operations += operation
+        println(s"Node $id has ${operations.mkString(", ")}, result = $counter")
+      }
+      def downstream(operation: Operation): Unit = _nodes.foreach(_.local(operation))
+    }
+
+    val node1 = new Node(id = 1)
+    val node2 = new Node(id = 2)
+    val node3 = new Node(id = 3)
+
+    node1 broadcastTo (node2, node3)
+    node2 broadcastTo (node1, node3)
+    node3 broadcastTo (node1, node2)
+
+    node2 apply inc(1)
+    node3 apply inc(3)
+    node3 apply mul(2)
+    node3 apply dec(4)
+
+    node1.counter must_=== 0 // TODO
+  }
 }
